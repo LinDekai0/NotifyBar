@@ -5,13 +5,13 @@
  xmlns:desktop="http://schemas.microsoft.com/appx/manifest/desktop/windows10"
  xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
  IgnorableNamespaces="uap uap3 desktop rescap">
-  <Identity Name="NotificationBarrage" Publisher="CN=NotificationBarrage.Dev" Version="1.0.0.0" ProcessorArchitecture="x64" />
+  <Identity Name="NotificationBarrage" Publisher="CN=NotificationBarrage.Dev" Version="1.1.0.0" ProcessorArchitecture="x64" />
   <Properties><DisplayName>NotifyBar</DisplayName><PublisherDisplayName>NotificationBarrage</PublisherDisplayName><Logo>Assets\StoreLogo.png</Logo></Properties>
   <Dependencies><TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.18362.0" MaxVersionTested="10.0.26100.0" /></Dependencies>
   <Resources><Resource Language="zh-cn" /></Resources>
   <Applications>
     <Application Id="App" Executable="NotificationBarrage.exe" EntryPoint="Windows.FullTrustApplication">
-      <uap:VisualElements DisplayName="NotifyBar" Description="游戏时显示 QQ 和微信 Windows 通知" BackgroundColor="transparent" Square150x150Logo="Assets\Square150x150Logo.png" Square44x44Logo="Assets\Square44x44Logo.png" />
+      <uap:VisualElements DisplayName="NotifyBar" Description="将所选应用的 Windows 通知显示为游戏弹幕" BackgroundColor="transparent" Square150x150Logo="Assets\Square150x150Logo.png" Square44x44Logo="Assets\Square44x44Logo.png" />
       <Extensions><desktop:Extension Category="windows.startupTask" Executable="NotificationBarrage.exe" EntryPoint="Windows.FullTrustApplication"><desktop:StartupTask TaskId="NotificationBarrageStartup" Enabled="false" DisplayName="NotifyBar" /></desktop:Extension></Extensions>
     </Application>
   </Applications>
