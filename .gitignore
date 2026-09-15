@@ -6,3 +6,7 @@ artifacts/
 *.pfx
 *.cer
 *.user
+rename-report.md
+docs/verification.md
+docs/superpowers/
+scripts/Move-ToDriveRoot.ps1

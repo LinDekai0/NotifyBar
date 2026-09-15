@@ -94,4 +94,4 @@ $sdk = (Get-Command dotnet.exe).Source
 
 预览版输出到 `artifacts\\preview`，只用于测试显示效果。完整通知接收版本需要使用 `Build-Msix.ps1` 生成 MSIX。
 
-详细验证记录见 [docs/verification.md](docs/verification.md)，性能说明见 [docs/performance.md](docs/performance.md)。
+性能说明见 [docs/performance.md](docs/performance.md)。
