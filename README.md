@@ -1,70 +1,87 @@
 # NotifyBar
 
-NotifyBar 是 Windows 桌面弹幕工具：它只读取你选择的 **Windows 通知中心** 来源，把新通知显示在游戏画面上方。
+NotifyBar 是一个 Windows 桌面通知弹幕工具。它会把你选择的 Windows 通知中心消息，显示成醒目的滚动弹幕。
 
-## 快速开始
+做文档、看视频，甚至打游戏时，你都能第一时间看到通知：朋友的娱乐邀请、家人的消息或上司的工作安排，都不容易被错过。
 
-### 1. 下载并安装
+## 快速安装
 
-从 GitHub Releases 下载最新的 `NotificationBarrage-<版本>-x64.msix`。
+支持 Windows 10 1903 及以上版本、Windows 11，仅支持 x64。安装包已包含 .NET 运行时，无需另外安装。
 
-开发测试包需要先信任随包提供的公钥证书，然后在 Windows PowerShell 5.1 执行：
+### 第一步：下载文件
 
-```powershell
-Set-Location '你的 NotifyBar 文件夹'
-.\scripts\Install-DevMsix.ps1 -TrustCertificate
-```
+在 GitHub Releases 下载以下两个文件：
 
-从开始菜单打开 **NotifyBar**。
+- `NotifyBar-Dev.cer`
+- `NotificationBarrage-1.1.3.0-x64.msix`
 
-> 完整通知接收必须使用 MSIX。Windows 的 `UserNotificationListener` 需要应用包身份和通知访问声明。预览 EXE 只用于显示效果测试，不能读取真实通知。
+### 第二步：信任证书
 
-### 2. 允许读取通知
+本版本使用自签名开发证书，第一次安装需要信任证书。证书只用于确认安装包来自本项目：
 
-1. 打开 NotifyBar 设置，点击“连接通知”。
-2. 在 Windows 提示中允许通知访问。
-3. 让目标软件产生一条系统通知。
-4. 回到 NotifyBar，点击“刷新”。
-5. 勾选目标应用，点击“保存设置”。
-6. 接收下一条新通知。
+1. 双击 `NotifyBar-Dev.cer`，点击“安装证书”。
+2. 选择“本地计算机”，点击“下一步”，并允许管理员确认。
+3. 选择“将所有的证书放入下列存储”，点击“浏览”。
+4. 选择“受信任人（Trusted People）”，确认并完成导入。
 
-首次启动、重新授权或恢复权限时，通知中心里已有的旧消息不会回放。新发现的来源默认关闭，必须由你主动勾选。
+### 第三步：安装 NotifyBar
 
-### 3. 测试系统通知
+双击 `NotificationBarrage-1.1.3.0-x64.msix`，点击“安装”。安装完成后，从开始菜单打开 **NotifyBar**。
 
-下面命令只发送固定的本机测试文本，不联系 QQ、微信或其他聊天服务：
+> 完整通知接收必须使用 MSIX。预览版 EXE 只能测试弹幕显示，不能读取 Windows 通知中心。
 
-```powershell
-powershell.exe -NoProfile -File '.\scripts\Send-TestNotification.ps1'
-```
+## 首次使用
 
-第一次运行后刷新来源，勾选“Windows PowerShell”并保存，再运行一次。看到测试文本弹过，说明 Windows 通知接收链路正常。
+1. 打开 NotifyBar 设置，点击“连接通知”，并在 Windows 提示中允许通知访问。
+2. 让目标应用产生一条 Windows 系统通知。
+3. 回到 NotifyBar，点击“刷新”。
+4. 点击目标应用旁边的勾选框，然后点击“保存设置”。
+5. 等待下一条新通知，或点击“发送测试弹幕”检查显示效果。
 
-## 支持范围
+已有的历史通知不会回放。新发现的通知来源默认关闭，需要手动勾选。
 
-NotifyBar 可以读取任何真正写入 Windows 通知中心的应用，例如 Telegram Desktop、Microsoft Teams、Outlook，以及部分版本的 QQ。是否支持取决于客户端版本和系统通知设置。
+## 支持哪些应用
 
-微信自有弹窗不属于 Windows 通知中心，因此不在读取范围内。NotifyBar 不读取聊天窗口，不回复或发送消息，不注入游戏进程，也不上传通知内容。
+NotifyBar 可以读取真正写入 Windows 通知中心的应用，例如 Telegram Desktop、Microsoft Teams、Outlook，以及部分版本的 QQ。是否支持取决于应用版本和 Windows 通知设置。
 
-应用必须提供通知正文预览，NotifyBar 才能显示正文。Windows 勿扰模式、专注助手、游戏模式和应用自身的通知设置可能阻止通知产生。
+微信自有弹窗不属于 Windows 通知中心，因此不在读取范围内。NotifyBar 不读取聊天窗口，不发送或回复消息，也不注入其他程序。
 
-## 弹幕效果
+如果应用没有把通知写入 Windows 通知中心，或关闭了通知正文预览，NotifyBar 就无法显示对应内容。
 
-- 透明置顶、鼠标穿透、不抢焦点。
-- 支持顶部、中部、底部、速度、字体、透明度和正文长度调整。
-- 最多同时显示 5 条，队列最多保留 100 条。
-- 适合窗口化和无边框全屏游戏；独占全屏不保证覆盖。
-- 覆盖层只占用弹幕带高度，移动内容使用位图缓存，并避免周期性置顶刷新，以减少卡顿。
+## 弹幕设置
 
-## 隐私
+- 可调整弹幕位置、速度、字体大小、透明度和正文长度。
+- 支持置顶、鼠标穿透和不抢焦点。
+- 最多同时显示 5 条消息，等待队列最多保留 100 条。
+- 可用于办公、学习、看视频和游戏等场景。
 
-NotifyBar 只在本机读取 Windows 通知中心，并按你选择的 AppUserModelId 过滤。设置文件只保存来源 ID、显示名称和开关；通知标题和正文不会写入配置或日志。日志只记录错误类型和运行状态，不记录聊天内容。
+## 隐私说明
 
-仓库不包含本机配置、通知历史、用户名路径、证书私钥、PFX/CER、构建产物或日志；这些路径已在 `.gitignore` 中排除。提交前会检查 Git 跟踪文件，避免把本地隐私推送到 GitHub。
+NotifyBar 只在本机读取 Windows 通知中心，并按你选择的应用过滤。通知标题和正文不会写入配置或日志，不会上传到网络，也不会发送给任何人。
+
+仓库不包含本机配置、通知历史、用户名路径、证书私钥、PFX/CER、构建产物或日志。
+
+## 常见问题
+
+**没有看到某个应用？**
+
+先让该应用产生一条 Windows 系统通知，再回到 NotifyBar 点击“刷新”。来源列表只显示已经被 Windows 发现的通知应用。
+
+**安装时提示证书不受信任？**
+
+请先完成上面的证书导入步骤，并确认导入位置是“受信任人（Trusted People）”，不是“受信任的根证书颁发机构”。
+
+**通知中心里没有微信？**
+
+NotifyBar 只读取 Windows 通知中心。微信自有弹窗没有进入通知中心时，无法被读取。
+
+**想卸载怎么办？**
+
+先退出 NotifyBar，再到 Windows“设置 → 应用 → 已安装的应用”中卸载。开发证书如需移除，只删除本项目的 `CN=NotificationBarrage.Dev` 证书。
 
 ## 从源码构建
 
-环境：Windows 10 1903 或 Windows 11、x64、.NET 8 SDK。生成 MSIX 还需要 Windows SDK 的 MakeAppx 和 SignTool。
+需要 Windows 10/11、x64、.NET 8 SDK；生成 MSIX 还需要 Windows SDK 的 MakeAppx 和 SignTool。
 
 ```powershell
 Set-Location '你的 NotifyBar 文件夹'
@@ -75,29 +92,6 @@ $sdk = (Get-Command dotnet.exe).Source
 .\scripts\Build-Preview.ps1 -DotnetPath $sdk
 ```
 
-预览版输出到 `artifacts\preview`，运行：
+预览版输出到 `artifacts\\preview`，只用于测试显示效果。完整通知接收版本需要使用 `Build-Msix.ps1` 生成 MSIX。
 
-```powershell
-.\artifacts\preview\NotificationBarrage.Preview.exe --demo
-```
-
-预览版只测试弹幕显示。生成可安装的自包含 MSIX：
-
-```powershell
-.\scripts\Build-Msix.ps1 -DotnetPath $sdk -CertificateThumbprint '你的代码签名证书指纹'
-```
-
-安装包输出到 `artifacts\msix`。正式分发请使用受信任的代码签名证书或 Microsoft Store。
-
-## 项目结构
-
-| 路径 | 用途 |
-|---|---|
-| `src/NotificationBarrage/Domain` | 设置、通知来源、消息和布局 |
-| `src/NotificationBarrage/Services` | Windows 通知监听、筛选、队列、日志 |
-| `src/NotificationBarrage/UI` | 设置窗口和透明弹幕覆盖层 |
-| `packaging` | MSIX 清单和图标 |
-| `scripts` | 恢复依赖、检查、预览、打包和本机通知测试 |
-| `tests` | xUnit 和离线行为检查 |
-
-详细验证记录见 [docs/verification.md](docs/verification.md)，性能定位见 [docs/performance.md](docs/performance.md)。
+详细验证记录见 [docs/verification.md](docs/verification.md)，性能说明见 [docs/performance.md](docs/performance.md)。
