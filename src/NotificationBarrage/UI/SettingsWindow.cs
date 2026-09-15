@@ -8,8 +8,6 @@ namespace NotificationBarrage.UI;
 
 public sealed class SettingsWindow : Window
 {
-    private readonly CheckBox _qq = new() { Content = "QQ", Margin = new Thickness(0, 8, 30, 8) };
-    private readonly CheckBox _wechat = new() { Content = "微信", Margin = new Thickness(0, 8, 30, 8) };
     private readonly CheckBox _startup = new() { Content = "登录 Windows 后启动", Margin = new Thickness(0, 14, 0, 14) };
     private readonly ComboBox _position = new() { ItemsSource = new[] { "顶部", "中部", "底部" }, Width = 160, HorizontalAlignment = HorizontalAlignment.Left, Foreground = Brushes.Black, Margin = new Thickness(0, 8, 0, 8) };
     private readonly TextBlock _status = Text("正在检查通知连接…", 14, "#A5B4C8");
@@ -17,24 +15,32 @@ public sealed class SettingsWindow : Window
     private readonly Slider _speed, _font, _opacity, _length, _offset;
     private readonly Button _save;
     private readonly Func<AppSettings, Task<string?>> _saveSettings;
+    private readonly Func<Task<string?>> _refreshSources;
+    private readonly AppSettings _settingsTemplate;
+    private readonly SourceSelectionDraft _sourceDraft;
+    private readonly TextBox _sourceSearch = new() { Margin = new Thickness(0, 8, 0, 4), Padding = new Thickness(9, 7, 9, 7) };
+    private readonly StackPanel _sourceRows = new();
 
     public SettingsWindow(AppSettings settings, Func<AppSettings, Task<string?>> saveSettings, Action test,
-        Func<Task> connect, Action openAccess, Action openBanners)
+        Func<Task> connect, Func<Task<string?>> refreshSources, Action openAccess, Action openBanners)
     {
         _saveSettings = saveSettings;
+        _refreshSources = refreshSources;
+        _settingsTemplate = settings;
+        _sourceDraft = new SourceSelectionDraft(settings.KnownSources, settings.EnabledSourceIds);
         Title = "NotifyBar · 设置";
         Width = Math.Min(790, SystemParameters.WorkArea.Width - 30);
         Height = Math.Min(830, SystemParameters.WorkArea.Height - 30); MinWidth = 540; MinHeight = 460;
         WindowStartupLocation = WindowStartupLocation.CenterScreen;
         Background = Brush("#0B1120"); Foreground = Brush("#E2E8F0");
-        _qq.Foreground = _wechat.Foreground = _startup.Foreground = Foreground;
+        _startup.Foreground = Foreground;
         FontFamily = new FontFamily("Microsoft YaHei UI"); FontSize = 14;
         var root = new StackPanel { Margin = new Thickness(30, 24, 30, 24) };
         root.Children.Add(Text("NotifyBar", 29, "#F8FAFC", true));
         root.Children.Add(Text("专心游戏，也不错过一句重要的话", 13, "#94A3B8"));
         var preview = new StackPanel();
         preview.Children.Add(Text("消息出现时", 11, "#94A3B8"));
-        preview.Children.Add(Text("微信   小伙伴：等你这局结束，一起开黑！", 19, "#6EE7B7", true));
+        preview.Children.Add(Text("NotifyBar   小伙伴：等你这局结束，一起开黑！", 19, "#6EE7B7", true));
         root.Children.Add(Card(preview));
 
         var connection = new StackPanel();
@@ -45,12 +51,43 @@ public sealed class SettingsWindow : Window
         connectButton.Click += async (_, _) => { connectButton.IsEnabled = false; try { await connect(); } finally { connectButton.IsEnabled = true; } };
         actions.Children.Add(connectButton);
         var access = Button("通知访问设置"); access.Click += (_, _) => openAccess(); actions.Children.Add(access);
-        var banners = Button("QQ / 微信通知设置"); banners.Click += (_, _) => openBanners(); actions.Children.Add(banners);
+        var banners = Button("应用通知设置"); banners.Click += (_, _) => openBanners(); actions.Children.Add(banners);
         connection.Children.Add(actions); root.Children.Add(Card(connection));
+
+        var sourceOptions = new StackPanel();
+        sourceOptions.Children.Add(Text("通知来源", 16, "#F8FAFC", true));
+        sourceOptions.Children.Add(Text("搜索应用", 12, "#94A3B8"));
+        _sourceSearch.TextChanged += (_, _) => RebuildSourceRows();
+        sourceOptions.Children.Add(_sourceSearch);
+        var sourceActions = new WrapPanel();
+        var selectAll = Button("全选");
+        selectAll.Click += (_, _) => { _sourceDraft.SetAll(_sourceDraft.Sources.Select(source => source.AppId), true); RebuildSourceRows(); };
+        sourceActions.Children.Add(selectAll);
+        var clearAll = Button("清空");
+        clearAll.Click += (_, _) => { _sourceDraft.SetAll(_sourceDraft.Sources.Select(source => source.AppId), false); RebuildSourceRows(); };
+        sourceActions.Children.Add(clearAll);
+        var refresh = Button("刷新");
+        refresh.Click += async (_, _) =>
+        {
+            refresh.IsEnabled = false;
+            try { _result.Text = await _refreshSources() ?? "来源列表已刷新。"; }
+            catch { _result.Text = "刷新失败，请检查通知访问权限后重试。"; }
+            finally { refresh.IsEnabled = true; }
+        };
+        sourceActions.Children.Add(refresh);
+        sourceOptions.Children.Add(sourceActions);
+        sourceOptions.Children.Add(new ScrollViewer
+        {
+            Content = _sourceRows,
+            MaxHeight = 250,
+            Margin = new Thickness(0, 8, 0, 0),
+            VerticalScrollBarVisibility = ScrollBarVisibility.Auto
+        });
+        root.Children.Add(Card(sourceOptions));
+        RebuildSourceRows();
 
         var options = new StackPanel();
         options.Children.Add(Text("显示偏好", 16, "#F8FAFC", true));
-        var sources = new StackPanel { Orientation = Orientation.Horizontal }; sources.Children.Add(_qq); sources.Children.Add(_wechat); options.Children.Add(sources);
         options.Children.Add(Text("弹幕区域", 12, "#94A3B8")); options.Children.Add(_position);
         _offset = AddSlider(options, "垂直偏移", -500, 500, settings.VerticalOffset, "px");
         _speed = AddSlider(options, "滚动速度", 50, 2000, settings.SpeedPixelsPerSecond, "px/s");
@@ -69,7 +106,6 @@ public sealed class SettingsWindow : Window
         DockPanel.SetDock(fixedFooter, Dock.Bottom); layout.Children.Add(fixedFooter);
         layout.Children.Add(new ScrollViewer { Content = root, Background = Background, VerticalScrollBarVisibility = ScrollBarVisibility.Auto });
         Content = layout;
-        _qq.IsChecked = settings.EnableQQ; _wechat.IsChecked = settings.EnableWeChat;
         _position.SelectedIndex = (int)settings.Position; _startup.IsChecked = settings.StartWithWindows;
     }
 
@@ -79,6 +115,12 @@ public sealed class SettingsWindow : Window
         _startup.IsEnabled = status.Access != NotificationAccessStatus.NeedsPackage;
         _startup.ToolTip = _startup.IsEnabled ? "由 Windows 的启动应用设置管理" : "安装完整版 MSIX 后可使用开机启动";
     }
+    public void UpdateSources(IEnumerable<NotificationSourceInfo> sources, IEnumerable<string> enabledDefaultsForNewSources)
+    {
+        _sourceDraft.MergeSources(sources, enabledDefaultsForNewSources);
+        RebuildSourceRows();
+    }
+
     public void ShowResult(string message) => _result.Text = message;
     public void CapturePreview(string path)
     {
@@ -94,17 +136,60 @@ public sealed class SettingsWindow : Window
         _save.IsEnabled = false;
         try
         {
+            var selectionRevision = _sourceDraft.Revision;
             var settings = new AppSettings
             {
-                EnableQQ = _qq.IsChecked == true, EnableWeChat = _wechat.IsChecked == true,
+                KnownSources = _sourceDraft.Sources.ToArray(),
+                EnabledSourceIds = _sourceDraft.SelectedSourceIds.ToArray(),
+                PendingLegacySources = _settingsTemplate.PendingLegacySources,
                 Position = (BarragePosition)_position.SelectedIndex, VerticalOffset = (int)_offset.Value,
                 SpeedPixelsPerSecond = (int)_speed.Value, FontSize = _font.Value,
                 Opacity = _opacity.Value / 100, MaxBodyLength = (int)_length.Value, StartWithWindows = _startup.IsChecked == true
             }.Normalize();
-            _result.Text = await _saveSettings(settings) ?? "已保存。新弹幕将使用这些设置。";
+            var error = await _saveSettings(settings);
+            _result.Text = error ?? (_sourceDraft.Revision == selectionRevision
+                ? "已保存。新弹幕将使用这些设置。"
+                : "已保存点击时的设置；保存期间的来源修改尚未保存。");
         }
         catch { _result.Text = "保存失败，请检查本机设置目录是否可写。"; }
         finally { _save.IsEnabled = true; }
+    }
+
+    private void RebuildSourceRows()
+    {
+        _sourceRows.Children.Clear();
+        var query = _sourceSearch.Text.Trim();
+        var visible = _sourceDraft.Sources.Where(source => query.Length == 0
+            || source.DisplayName.Contains(query, StringComparison.CurrentCultureIgnoreCase)
+            || source.AppId.Contains(query, StringComparison.OrdinalIgnoreCase)).ToArray();
+        if (visible.Length == 0)
+        {
+            var message = _sourceDraft.Sources.Count == 0
+                ? "尚未发现来源。请开启目标软件的 Windows 通知并产生一条通知，再点击刷新。"
+                : "没有匹配的通知来源。";
+            _sourceRows.Children.Add(Text(message, 12, "#94A3B8"));
+            return;
+        }
+
+        foreach (var source in visible)
+        {
+            var checkBox = new CheckBox
+            {
+                Content = new TextBlock
+                {
+                    Text = source.DisplayName,
+                    MaxWidth = 430,
+                    TextTrimming = TextTrimming.CharacterEllipsis
+                },
+                IsChecked = _sourceDraft.IsEnabled(source.AppId),
+                Foreground = Foreground,
+                Margin = new Thickness(0, 6, 0, 6),
+                ToolTip = source.AppId
+            };
+            checkBox.Checked += (_, _) => _sourceDraft.SetEnabled(source.AppId, true);
+            checkBox.Unchecked += (_, _) => _sourceDraft.SetEnabled(source.AppId, false);
+            _sourceRows.Children.Add(checkBox);
+        }
     }
 
     private static Slider AddSlider(Panel target, string name, double min, double max, double value, string unit)

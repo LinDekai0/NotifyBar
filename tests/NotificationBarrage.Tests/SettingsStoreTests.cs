@@ -10,7 +10,9 @@ public sealed class SettingsStoreTests
     {
         using var directory = new TemporaryDirectory();
         var settings = new SettingsStore(directory.Path).Load();
-        Assert.True(settings.EnableQQ);
+        Assert.Empty(settings.EnabledSourceIds);
+        Assert.Empty(settings.KnownSources);
+        Assert.Empty(settings.PendingLegacySources);
         Assert.Equal(BarragePosition.Bottom, settings.Position);
         Assert.Equal(300, settings.SpeedPixelsPerSecond);
     }
@@ -19,11 +21,75 @@ public sealed class SettingsStoreTests
     public void SaveAndLoadRoundTripsSettings()
     {
         using var directory = new TemporaryDirectory();
-        var expected = new AppSettings { EnableQQ = false, Position = BarragePosition.Bottom, Opacity = 0.4, MaxBodyLength = 250 };
+        var expected = new AppSettings
+        {
+            KnownSources = [new("telegram.app", "Telegram")],
+            EnabledSourceIds = ["telegram.app"],
+            Position = BarragePosition.Bottom,
+            Opacity = 0.4,
+            MaxBodyLength = 250
+        };
         var store = new SettingsStore(directory.Path);
         store.Save(expected);
         var actual = store.Load();
-        Assert.Equal(expected, actual);
+        Assert.Equal(expected.Position, actual.Position);
+        Assert.Equal(expected.Opacity, actual.Opacity);
+        Assert.Equal(expected.MaxBodyLength, actual.MaxBodyLength);
+        Assert.Equal(expected.KnownSources, actual.KnownSources);
+        Assert.Equal(expected.EnabledSourceIds, actual.EnabledSourceIds);
+    }
+
+    [Fact]
+    public void SaveAndLoadPreservesExplicitlyEmptySelection()
+    {
+        using var directory = new TemporaryDirectory();
+        var store = new SettingsStore(directory.Path);
+        store.Save(new AppSettings { KnownSources = [new("telegram.app", "Telegram")], EnabledSourceIds = [] });
+
+        var actual = store.Load();
+
+        Assert.False(actual.IsSourceEnabled("telegram.app"));
+        Assert.Empty(actual.EnabledSourceIds);
+    }
+
+    [Fact]
+    public void LoadOldJsonMigratesOnlyEnabledLegacyApplicationsWhenDiscovered()
+    {
+        using var directory = new TemporaryDirectory();
+        Directory.CreateDirectory(directory.Path);
+        File.WriteAllText(Path.Combine(directory.Path, "settings.json"), """
+        { "EnableQQ": true, "EnableWeChat": false, "Position": "Bottom" }
+        """);
+        var store = new SettingsStore(directory.Path);
+        var pendingMigration = store.Load();
+        store.Save(pendingMigration);
+
+        var migrated = store.Load().MergeDiscoveredSources([
+            new("Tencent.QQ_abc!App", "QQ"),
+            new("Tencent.WeChat_xyz!App", "微信")
+        ]);
+
+        Assert.True(migrated.IsSourceEnabled("Tencent.QQ_abc!App"));
+        Assert.False(migrated.IsSourceEnabled("Tencent.WeChat_xyz!App"));
+        Assert.Empty(migrated.PendingLegacySources);
+    }
+
+    [Fact]
+    public void SavedCatalogContainsNoNotificationContent()
+    {
+        using var directory = new TemporaryDirectory();
+        var store = new SettingsStore(directory.Path);
+        store.Save(new AppSettings
+        {
+            KnownSources = [new("telegram.app", "Telegram")],
+            EnabledSourceIds = ["telegram.app"]
+        });
+
+        var json = File.ReadAllText(Path.Combine(directory.Path, "settings.json"));
+
+        Assert.Contains("telegram.app", json);
+        Assert.DoesNotContain("\"Title\":", json);
+        Assert.DoesNotContain("\"Body\":", json);
     }
 
     [Fact]
@@ -33,7 +99,8 @@ public sealed class SettingsStoreTests
         Directory.CreateDirectory(directory.Path);
         File.WriteAllText(Path.Combine(directory.Path, "settings.json"), "{broken");
         var settings = new SettingsStore(directory.Path).Load();
-        Assert.Equal(new AppSettings(), settings);
+        Assert.Empty(settings.EnabledSourceIds);
+        Assert.Equal(BarragePosition.Bottom, settings.Position);
         Assert.Single(Directory.GetFiles(directory.Path, "settings.json.broken-*"));
     }
 

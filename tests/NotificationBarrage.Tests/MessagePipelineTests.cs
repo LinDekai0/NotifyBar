@@ -18,15 +18,6 @@ public sealed class MessagePipelineTests
         Assert.Empty(tracker.Update([old, fresh]));
     }
 
-    [Theory]
-    [InlineData("QQ", true)] [InlineData("微信", true)] [InlineData("WeChat", true)]
-    [InlineData("NotQQ", false)] [InlineData("WeChatBackup", false)]
-    public void MatchesOnlySupportedSources(string name, bool expected)
-    {
-        var incoming = new IncomingNotification(Guid.NewGuid(), name, name, "好友", "消息", DateTimeOffset.Now);
-        Assert.Equal(expected, new MessageFilter().TryCreate(incoming, new(), out _));
-    }
-
     [Fact]
     public void LayoutKeepsEveryLaneInsidePrimaryDisplay()
     {

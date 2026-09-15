@@ -41,6 +41,7 @@ public sealed class AppHost : IDisposable
         _tray.ContextMenuStrip = menu;
         _tray.DoubleClick += (_, _) => OpenSettings();
         _overlay.MessageCompleted += (_, _) => _queue.MarkActiveCompleted();
+        _source.SourcesChanged += (_, args) => _app.Dispatcher.BeginInvoke(() => ApplyDiscoveredSources(args.Sources));
         _source.NotificationReceived += (_, message) => _app.Dispatcher.BeginInvoke(() =>
         {
             if (!_exiting && _filter.TryCreate(message, _settings, out var item)) _queue.Enqueue(item!);
@@ -105,6 +106,7 @@ public sealed class AppHost : IDisposable
         if (_window is null)
         {
             _window = new SettingsWindow(_settings, SaveAsync, TestMessage, ConnectAsync,
+                RefreshSourcesAsync,
                 () => ShowError(NotificationPermissionService.OpenNotificationSettings()),
                 () => ShowError(NotificationPermissionService.OpenBannerSettings()));
             _window.Closed += (_, _) => _window = null;
@@ -122,7 +124,8 @@ public sealed class AppHost : IDisposable
         }
         try
         {
-            _store.Save(settings); _settings = settings; _overlay.ApplySettings(settings); return null;
+            var merged = _settings.MergeUserChanges(settings).MergeDiscoveredSources(_source.Sources);
+            _store.Save(merged); _settings = merged; _overlay.ApplySettings(merged); return null;
         }
         catch (Exception ex)
         {
@@ -141,7 +144,7 @@ public sealed class AppHost : IDisposable
     private void TestMessage()
     {
         if (_queue.IsPaused) { _window?.ShowResult("已暂停，请从托盘恢复弹幕后再测试。"); _tray.ShowBalloonTip(2500, "NotifyBar 已暂停", "右键托盘图标选择「恢复弹幕」后再测试。", Forms.ToolTipIcon.Info); return; }
-        var message = new BarrageMessage("微信", "小伙伴", "等你这局结束，一起开黑！", DateTimeOffset.Now, Guid.NewGuid().ToString()) { NotificationId = Guid.NewGuid(), IsTest = true };
+        var message = new BarrageMessage("notifybar.test", "NotifyBar", "小伙伴", "等你这局结束，一起开黑！", DateTimeOffset.Now, Guid.NewGuid().ToString()) { NotificationId = Guid.NewGuid(), IsTest = true };
         if (!_queue.Enqueue(message)) { _window?.ShowResult("测试消息发送较快，请稍等一秒再试。"); return; }
         _window?.ShowResult("测试弹幕已发送。关闭设置窗口后也能从托盘继续测试。");
     }
@@ -152,13 +155,45 @@ public sealed class AppHost : IDisposable
         while (_overlay.AvailableSlots > 0 && _queue.TryDequeue(out var item))
         {
             // Re-check source toggles at display time, so disabling a source also filters its backlog.
-            if (!item!.IsTest && (item.Source == "QQ" ? !_settings.EnableQQ : !_settings.EnableWeChat)) { _queue.MarkActiveCompleted(); continue; }
+            if (!BarrageDisplayGate.ShouldDisplay(item!, _settings)) { _queue.MarkActiveCompleted(); continue; }
             try { if (!_overlay.ShowMessage(item!, _settings)) { _queue.MarkActiveCompleted(); break; } }
             catch (Exception ex) { _queue.MarkActiveCompleted(); _logger.Error("overlay-failed", ex); }
         }
     }
 
     private async Task ConnectAsync() { await _source.RequestAccessAsync(); await _source.StartAsync(_stop.Token); }
+    private async Task<string?> RefreshSourcesAsync()
+    {
+        try
+        {
+            await _source.RefreshAsync(_stop.Token);
+            return _source.Sources.Count == 0 && _settings.KnownSources.Length == 0
+                ? "尚未发现来源。请让目标软件产生一条 Windows 通知后再刷新。"
+                : "来源列表已刷新；新来源默认关闭。";
+        }
+        catch (OperationCanceledException) when (_stop.IsCancellationRequested) { return "应用正在退出。"; }
+        catch (Exception ex) { _logger.Error("notification-refresh-failed", ex); return "刷新失败，请检查通知访问权限后重试。"; }
+    }
+
+    private void ApplyDiscoveredSources(IReadOnlyList<NotificationSourceInfo> sources)
+    {
+        if (_exiting) return;
+        var merged = _settings.MergeDiscoveredSources(sources);
+        _settings = merged;
+        _window?.UpdateSources(merged.KnownSources, merged.EnabledSourceIds);
+        try
+        {
+            _store.Save(merged);
+        }
+        catch (Exception ex)
+        {
+            _logger.Error("source-catalog-save-failed", ex);
+            const string message = "发现了新的通知来源，但来源列表未能保存。请检查本机设置目录是否可写。";
+            _window?.ShowResult(message);
+            try { _tray.ShowBalloonTip(4000, "NotifyBar 来源未保存", message, Forms.ToolTipIcon.Warning); }
+            catch (Exception notificationException) { _logger.Error("source-save-warning-failed", notificationException); }
+        }
+    }
     private async Task CheckPermissionAsync() { await _source.GetAccessStatusAsync(); OpenSettings(); }
     private void ShowError(string? error) { if (error is not null) _window?.ShowResult(error); }
 

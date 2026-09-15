@@ -32,7 +32,18 @@ public sealed class SettingsStore
         try
         {
             var json = File.ReadAllText(_path);
-            return (JsonSerializer.Deserialize<AppSettings>(json, JsonOptions) ?? new AppSettings()).Normalize();
+            using var document = JsonDocument.Parse(json);
+            var settings = (JsonSerializer.Deserialize<AppSettings>(json, JsonOptions) ?? new AppSettings()).Normalize();
+            if (document.RootElement.ValueKind == JsonValueKind.Object
+                && !document.RootElement.TryGetProperty(nameof(AppSettings.KnownSources), out _)
+                && !document.RootElement.TryGetProperty(nameof(AppSettings.EnabledSourceIds), out _))
+            {
+                var pending = new List<LegacyNotificationSource>();
+                if (ReadLegacyBoolean(document.RootElement, "EnableQQ", true)) pending.Add(LegacyNotificationSource.QQ);
+                if (ReadLegacyBoolean(document.RootElement, "EnableWeChat", true)) pending.Add(LegacyNotificationSource.WeChat);
+                settings = settings with { PendingLegacySources = pending.ToArray() };
+            }
+            return settings.Normalize();
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException or NotSupportedException)
         {
@@ -40,6 +51,12 @@ public sealed class SettingsStore
             BackupBrokenFile();
             return new AppSettings().Normalize();
         }
+    }
+
+    private static bool ReadLegacyBoolean(JsonElement root, string propertyName, bool defaultValue)
+    {
+        if (!root.TryGetProperty(propertyName, out var value)) return defaultValue;
+        return value.ValueKind is JsonValueKind.True or JsonValueKind.False ? value.GetBoolean() : defaultValue;
     }
 
     public void Save(AppSettings settings)
