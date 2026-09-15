@@ -1,7 +1,6 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
-using System.Windows.Media.Effects;
 using NotificationBarrage.Domain;
 
 namespace NotificationBarrage.UI;
@@ -15,7 +14,6 @@ public sealed class BarrageItemControl : Border
         Padding = new Thickness(13, 7, 13, 7);
         Opacity = settings.Opacity;
         MaxWidth = Math.Max(100, maximumWidth);
-        Effect = new DropShadowEffect { BlurRadius = 5, ShadowDepth = 1, Opacity = .5 };
         var row = new StackPanel { Orientation = Orientation.Horizontal };
         row.Children.Add(new TextBlock
         {

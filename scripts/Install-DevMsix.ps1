@@ -2,7 +2,11 @@
 $ErrorActionPreference = 'Stop'
 if ($PSVersionTable.PSEdition -eq 'Core') { throw 'Run this script using Windows PowerShell 5.1 (powershell.exe).' }
 $projectRoot = Split-Path $PSScriptRoot -Parent
-if (!$PackagePath) { $PackagePath = Join-Path $projectRoot 'artifacts\msix\NotificationBarrage-1.1.0.0-x64.msix' }
+if (!$PackagePath) {
+    $PackagePath = Get-ChildItem -LiteralPath (Join-Path $projectRoot 'artifacts\msix') -Filter 'NotificationBarrage-*.msix' |
+        Sort-Object LastWriteTime | Select-Object -Last 1 -ExpandProperty FullName
+    if (!$PackagePath) { throw 'No NotifyBar MSIX found. Build it first with scripts\Build-Msix.ps1.' }
+}
 if (!$CertificatePath) { $CertificatePath = Join-Path $projectRoot 'artifacts\msix\NotifyBar-Dev.cer' }
 $package = (Resolve-Path -LiteralPath $PackagePath).Path
 $certificateFile = (Resolve-Path -LiteralPath $CertificatePath).Path

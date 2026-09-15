@@ -66,6 +66,8 @@ foreach (var position in Enum.GetValues<BarragePosition>())
 {
     var layout = OverlayLayout.Calculate(720, settings with { Position = position, FontSize = 72, VerticalOffset = 500 });
     Check(layout.BandTop >= 0 && layout.BandTop + layout.LaneHeight * layout.LaneCount <= 720, $"{position} 大字号不越出屏幕");
+    var viewport = OverlayViewport.Calculate(1280, 720, layout);
+    Check(viewport.Height < 720 && viewport.Top >= 0 && viewport.Top + viewport.Height <= 720, $"{position} 覆盖区域限制在弹幕带");
 }
 var temp = Path.Combine(Path.GetTempPath(), "BarrageChecks-" + Guid.NewGuid().ToString("N"));
 try

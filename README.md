@@ -4,13 +4,13 @@ Windows 桌面应用，把用户选中的应用发到 **Windows 通知中心** �
 
 ## 安装与首次使用
 
-完整版为 **1.1.0.0 / Windows x64 / 自包含 .NET 8.0.31**，安装后无需另装 .NET。
-本机安装包位于 artifacts/msix/NotificationBarrage-1.1.0.0-x64.msix，公钥证书为同目录 NotifyBar-Dev.cer。构建产物和证书不提交到 Git。
+完整版为 **1.1.1.0 / Windows x64 / 自包含 .NET 8.0.31**，安装后无需另装 .NET。
+本机安装包位于 artifacts/msix/NotificationBarrage-1.1.1.0-x64.msix，公钥证书为同目录 NotifyBar-Dev.cer。构建产物和证书不提交到 Git。
 
 在 **Windows PowerShell 5.1** 中执行：
 
 ~~~powershell
-Set-Location 'D:\notification-barrage'
+Set-Location 'C:\path\to\NotifyBar'
 .\scripts\Install-DevMsix.ps1 -TrustCertificate
 ~~~
 
@@ -29,7 +29,7 @@ Set-Location 'D:\notification-barrage'
 应用内的“发送测试弹幕”只测试显示效果。下面脚本会通过 **Windows PowerShell** 的注册来源发出一条真正的本机 Windows Toast，不联系任何聊天服务：
 
 ~~~powershell
-powershell.exe -NoProfile -File 'D:\notification-barrage\scripts\Send-TestNotification.ps1'
+powershell.exe -NoProfile -File '.\scripts\Send-TestNotification.ps1'
 ~~~
 
 第一次运行后，在 NotifyBar 中刷新来源，勾选 **Windows PowerShell** 并保存，再运行一次命令。应看到含本次测试标记的通知弹幕。脚本的 PresentInSenderHistory=true 只证明通知已进入该来源的系统历史；实际弹幕仍需检查。两次测试正文包含不同标记，以免短时间去重隐藏第二次测试。测试完成后可取消勾选 Windows PowerShell 并保存。
@@ -37,6 +37,16 @@ powershell.exe -NoProfile -File 'D:\notification-barrage\scripts\Send-TestNotifi
 Telegram Desktop、Microsoft Teams、Outlook 等可作为候选；客户端版本、通知模式和系统设置会影响它们是否使用 Windows 通知。**以目标电脑实际出现的 Windows 通知为准**。微信自有弹窗不接入，也不读取聊天窗口。
 
 真实外部来信验收：开启目标软件的 Windows 系统通知及正文预览，接收一条正常来信以发现来源，勾选保存后再接收一条新来信。确认只显示一次；关闭该来源并保存，再次来信应不显示。不要将本机测试 Toast 等同于外部通讯软件验收。
+
+## 性能与隐私
+
+### 卡顿修复
+
+弹幕覆盖层现在只占用弹幕带高度，不再覆盖整块屏幕；移动内容使用位图缓存，不使用每帧重算的动态阴影，也不再每两秒调用置顶 API。这样可以避免周期性合成停顿，并降低长中文、表情和 QQ 多段通知的重绘开销。窗口仍保持置顶、鼠标穿透和不抢焦点。性能和验证细节见 docs/performance.md。
+
+### 隐私检查
+
+NotifyBar 只读取 Windows 通知中心中你主动选择的应用，不读取聊天窗口、不发送或回复消息、不联网上传、不把通知标题或正文写入日志和配置。GitHub 仓库仅包含源代码、测试、脚本和文档；.gitignore 排除了 artifacts/、.tools/、.superpowers/、bin/、obj/、证书和日志。提交前已检查 Git 跟踪文件，没有本机用户名路径、通知正文、私钥、PFX/CER 或运行时验证产物。
 
 ## 功能与边界
 
@@ -56,7 +66,7 @@ Telegram Desktop、Microsoft Teams、Outlook 等可作为候选；客户端版�
 环境：Windows 10 1903+ / Windows 11 x64、.NET 8 SDK；MSIX 打包另需 Windows 10/11 SDK 的 MakeAppx 和 SignTool。
 
 ~~~powershell
-Set-Location 'D:\notification-barrage'
+Set-Location 'C:\path\to\NotifyBar'
 .\scripts\Restore-Dependencies.ps1
 ~~~
 
@@ -65,7 +75,7 @@ Set-Location 'D:\notification-barrage'
 本机 Rider SDK 可显式指定；其他电脑可使用自己的 SDK 路径：
 
 ~~~powershell
-$sdk = 'D:\JetBrains Rider 2024.1.5\lib\ReSharperHost\windows-x64\dotnet\dotnet.exe'
+$sdk = (Get-Command dotnet.exe).Source
 .\scripts\Restore-Dependencies.ps1 -DotnetPath $sdk
 .\scripts\Invoke-OfflineChecks.ps1 -DotnetPath $sdk
 .\scripts\Build-Preview.ps1 -DotnetPath $sdk
@@ -94,7 +104,7 @@ Build-Msix 默认固定 .NET 8.0.31，可通过 RuntimeVersion 调整补丁版�
 
 ## 验证状态与结构
 
-本机已完成完整版编译、签名 MSIX 安装和 Windows PowerShell 系统 Toast 接收/显示验证；24 项 xUnit 与 39 项离线检查通过。外部通讯软件来信和实际游戏仍需在目标环境验收。详细结果见 [docs/verification.md](docs/verification.md)。区分构建、显示测试、安装、通知授权、本机 Toast 和外部软件真实来信，未验收项目不会按成功报告。
+本机已完成完整版编译、签名 MSIX 安装和 Windows PowerShell 系统 Toast 接收/显示验证；27 项 xUnit 与 42 项离线检查通过。弹幕覆盖层采用弹幕带大小窗口、位图缓存，并移除周期性置顶刷新，减少周期性卡顿。外部通讯软件来信和实际游戏仍需在目标环境验收。详细结果见 [docs/verification.md](docs/verification.md)。区分构建、显示测试、安装、通知授权、本机 Toast 和外部软件真实来信，未验收项目不会按成功报告。
 
 | 路径 | 作用 |
 |---|---|

@@ -4,7 +4,6 @@ using System.Windows.Controls;
 using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
-using System.Windows.Threading;
 using Microsoft.Win32;
 using NotificationBarrage.Domain;
 
@@ -16,7 +15,6 @@ public sealed class OverlayWindow : Window
     private readonly Dictionary<int, BarrageItemControl> _items = new();
     private AppSettings _settings = new();
     private OverlayGeometry _geometry = new(0, 58, 5);
-    private readonly DispatcherTimer _topmost;
     public event EventHandler? MessageCompleted;
     public int ActiveItems => _items.Count;
     public int AvailableSlots => _geometry.LaneCount - _items.Count;
@@ -42,11 +40,7 @@ public sealed class OverlayWindow : Window
             ApplySettings(_settings);
         };
         SystemEvents.DisplaySettingsChanged += DisplayChanged;
-        _topmost = new DispatcherTimer(TimeSpan.FromSeconds(2), DispatcherPriority.Background, (_, _) =>
-        {
-            if (_items.Count > 0) SetWindowPos(new WindowInteropHelper(this).Handle, new IntPtr(-1), 0, 0, 0, 0, 0x1 | 0x2 | 0x10);
-        }, Dispatcher);
-        Closed += (_, _) => { _topmost.Stop(); SystemEvents.DisplaySettingsChanged -= DisplayChanged; ClearMessages(); };
+        Closed += (_, _) => { SystemEvents.DisplaySettingsChanged -= DisplayChanged; ClearMessages(); };
     }
 
     public void ApplySettings(AppSettings settings)
@@ -58,8 +52,10 @@ public sealed class OverlayWindow : Window
         var transform = source?.CompositionTarget?.TransformFromDevice ?? Matrix.Identity;
         var origin = transform.Transform(new Point(bounds.Left, bounds.Top));
         var size = transform.Transform(new Point(bounds.Width, bounds.Height));
-        Left = origin.X; Top = origin.Y; Width = size.X; Height = size.Y;
-        _geometry = OverlayLayout.Calculate(Height, _settings);
+        var screenGeometry = OverlayLayout.Calculate(size.Y, _settings);
+        var viewport = OverlayViewport.Calculate(size.X, size.Y, screenGeometry);
+        Left = origin.X; Top = origin.Y + viewport.Top; Width = viewport.Width; Height = viewport.Height;
+        _geometry = screenGeometry with { BandTop = viewport.BandTop };
     }
 
     public bool ShowMessage(BarrageMessage message, AppSettings settings)
@@ -67,6 +63,7 @@ public sealed class OverlayWindow : Window
         var lane = Enumerable.Range(0, _geometry.LaneCount).FirstOrDefault(i => !_items.ContainsKey(i), -1);
         if (lane < 0) return false;
         var item = new BarrageItemControl(message, settings, Math.Max(160, Width * .85));
+        item.CacheMode = new BitmapCache { RenderAtScale = VisualTreeHelper.GetDpi(this).DpiScaleX };
         item.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
         var itemWidth = item.DesiredSize.Width;
         var move = new TranslateTransform(Width, _geometry.BandTop + lane * _geometry.LaneHeight);
@@ -118,5 +115,4 @@ public sealed class OverlayWindow : Window
 
     [DllImport("user32.dll", EntryPoint = "GetWindowLongPtrW")] private static extern nint GetWindowLongPtr(nint window, int index);
     [DllImport("user32.dll", EntryPoint = "SetWindowLongPtrW")] private static extern nint SetWindowLongPtr(nint window, int index, nint value);
-    [DllImport("user32.dll")] [return: MarshalAs(UnmanagedType.Bool)] private static extern bool SetWindowPos(nint window, nint insertAfter, int x, int y, int cx, int cy, uint flags);
 }
