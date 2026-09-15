@@ -88,8 +88,8 @@ public partial class App : System.Windows.Application
         try
         {
             MessageBox.Show(
-                "通知弹幕遇到无法继续运行的错误，错误已记录到本机日志。请重新启动应用；若仍失败，请重新安装完整版 MSIX 后再试。",
-                "通知弹幕",
+                "NotifyBar 遇到无法继续运行的错误，错误已记录到本机日志。请重新启动应用；若仍失败，请重新安装完整版 MSIX 后再试。",
+                "NotifyBar",
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning);
         }
@@ -106,8 +106,8 @@ public partial class App : System.Windows.Application
         try
         {
             MessageBox.Show(
-                "通知弹幕启动失败，错误已记录到本机日志。请重新启动应用；若仍失败，请重新安装完整版 MSIX 后再试。",
-                "通知弹幕",
+                "NotifyBar 启动失败，错误已记录到本机日志。请重新启动应用；若仍失败，请重新安装完整版 MSIX 后再试。",
+                "NotifyBar",
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning);
         }

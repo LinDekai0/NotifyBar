@@ -23,7 +23,7 @@ public sealed class OverlayWindow : Window
 
     public OverlayWindow()
     {
-        Title = "通知弹幕覆盖层";
+        Title = "NotifyBar 覆盖层";
         WindowStyle = WindowStyle.None;
         AllowsTransparency = true;
         Background = Brushes.Transparent;

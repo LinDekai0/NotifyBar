@@ -30,7 +30,7 @@ public sealed class AppHost : IDisposable
         _app = app;
         _settings = _store.Load();
         _source = new WindowsNotificationSource(_logger);
-        _tray = new Forms.NotifyIcon { Text = "通知弹幕", Icon = System.Drawing.SystemIcons.Information };
+        _tray = new Forms.NotifyIcon { Text = "NotifyBar", Icon = System.Drawing.SystemIcons.Information };
         var menu = new Forms.ContextMenuStrip();
         menu.Items.Add("打开设置", null, (_, _) => OpenSettings());
         _pause = new Forms.ToolStripMenuItem("暂停弹幕", null, (_, _) => TogglePause()); menu.Items.Add(_pause);
@@ -49,7 +49,7 @@ public sealed class AppHost : IDisposable
         {
             if (_exiting) return;
             _status = status; _window?.SetStatus(status);
-            _tray.Text = status.Access == NotificationAccessStatus.Allowed ? "通知弹幕 · 正在监听" : "通知弹幕 · 尚未连接通知";
+            _tray.Text = status.Access == NotificationAccessStatus.Allowed ? "NotifyBar · 正在监听" : "NotifyBar · 尚未连接通知";
         });
         _drain = new DispatcherTimer(TimeSpan.FromMilliseconds(120), DispatcherPriority.Background, (_, _) => Drain(), app.Dispatcher);
     }
@@ -140,7 +140,7 @@ public sealed class AppHost : IDisposable
 
     private void TestMessage()
     {
-        if (_queue.IsPaused) { _window?.ShowResult("已暂停，请从托盘恢复弹幕后再测试。"); _tray.ShowBalloonTip(2500, "通知弹幕已暂停", "右键托盘图标选择「恢复弹幕」后再测试。", Forms.ToolTipIcon.Info); return; }
+        if (_queue.IsPaused) { _window?.ShowResult("已暂停，请从托盘恢复弹幕后再测试。"); _tray.ShowBalloonTip(2500, "NotifyBar 已暂停", "右键托盘图标选择「恢复弹幕」后再测试。", Forms.ToolTipIcon.Info); return; }
         var message = new BarrageMessage("微信", "小伙伴", "等你这局结束，一起开黑！", DateTimeOffset.Now, Guid.NewGuid().ToString()) { NotificationId = Guid.NewGuid(), IsTest = true };
         if (!_queue.Enqueue(message)) { _window?.ShowResult("测试消息发送较快，请稍等一秒再试。"); return; }
         _window?.ShowResult("测试弹幕已发送。关闭设置窗口后也能从托盘继续测试。");
@@ -166,7 +166,7 @@ public sealed class AppHost : IDisposable
     {
         _logger.Error(eventName, exception);
         const string message = "应用遇到错误，已记录到本机日志。请打开设置检查通知权限；若持续发生，请重新启动或重新安装完整版 MSIX。";
-        try { _tray.ShowBalloonTip(5000, "通知弹幕需要处理", message, Forms.ToolTipIcon.Warning); }
+        try { _tray.ShowBalloonTip(5000, "NotifyBar 需要处理", message, Forms.ToolTipIcon.Warning); }
         catch (Exception trayException) { _logger.Error("tray-error-notification-failed", trayException); }
         try { _window?.ShowResult(message); }
         catch (Exception windowException) { _logger.Error("settings-error-notification-failed", windowException); }

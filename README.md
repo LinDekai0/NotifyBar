@@ -1,4 +1,4 @@
-# 通知弹幕
+# NotifyBar
 
 C# / .NET 8 WPF 桌面工具，把 QQ、微信发到 **Windows 通知中心** 的新消息显示成游戏画面上的滚动弹幕。
 
@@ -23,17 +23,16 @@ C# / .NET 8 WPF 桌面工具，把 QQ、微信发到 **Windows 通知中心** �
 
 ## 开发、测试与启动
 
-### 移动到 D 盘根目录
+### 当前项目目录
 
-先从托盘退出运行中的通知弹幕，再在你自己的 PowerShell 中执行：
+在 `D:\notification-barrage` 目录打开 PowerShell，执行：
 
 ```powershell
-& 'D:\股价信息预测系统\notification-barrage\scripts\Move-ToDriveRoot.ps1'
 Set-Location 'D:\notification-barrage'
 .\scripts\Restore-Dependencies.ps1
 ```
 
-移动脚本只移动已确认的项目目录，包含独立 Git 仓库，不覆盖已有的 `D:\notification-barrage`。后续在编辑器中打开新目录。恢复脚本自动查找 .NET 8 SDK（含本机 Rider SDK），使用官方 NuGet 源并运行 Release 构建及测试。若失败，查看 `artifacts/setup-logs/restore.log` 或 `test.log`，不必先逐个手工下载依赖。
+项目已放在 D 盘根目录并包含独立 Git 仓库。恢复脚本自动查找 .NET 8 SDK（含本机 Rider SDK），使用官方 NuGet 源并运行 Release 构建及测试。若失败，查看 `artifacts/setup-logs/restore.log` 或 `test.log`，不必先逐个手工下载依赖。
 
 ### 微信没有出现在 Windows 通知设置中
 
@@ -91,7 +90,7 @@ $sdk = 'D:\JetBrains Rider 2024.1.5\lib\ReSharperHost\windows-x64\dotnet\dotnet.
 
 安装签名包后：
 
-1. 从开始菜单打开「通知弹幕」。
+1. 从开始菜单打开「NotifyBar」。
 2. 点击「连接通知」，允许 Windows 通知访问；被拒绝时通过「通知访问设置」重新开启。
 3. 检查 QQ、微信的消息通知和内容预览，确认新消息进入 Windows 通知中心。
 4. 在窗口化/无边框游戏中发送测试弹幕，再分别接收真实 QQ 和微信消息。

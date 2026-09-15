@@ -16,7 +16,7 @@
 - 未生成可安装的完整 MSIX，未签名、信任证书或安装。
 - 未读取或测试用户的真实 QQ/微信通知，也未在实际游戏、不同 DPI/显示器布局、权限撤销或开机启动中完成集成验收。
 - 已有独立 Git 仓库和 `codex/notification-barrage` 分支，本地提交以 `git log -1 --oneline` 为准。原网页 index.html/styles.css 修改仍保留。
-- 用户已授权移动到 `D:\notification-barrage`。源目录与目标不存在的检查通过，但移动命令被自动审批服务 429 拒绝，项目仍在 `D:\股价信息预测系统\notification-barrage`。可在用户 PowerShell 执行 `scripts/Move-ToDriveRoot.ps1`。
+- 用户已授权移动到 `D:\notification-barrage`。源目录与目标不存在的检查通过，但移动命令被自动审批服务 429 拒绝，项目现已位于 `D:\notification-barrage`，后续命令均在该目录执行。
 - 本机运行中的微信为 `4.1.13.65`、QQ 为 `9.9.21.39038-6a73892f`。代理的通知注册诊断在沙箱账户下运行，无法据此判断用户账户的微信通知支持情况；须实测新消息是否出现在通知中心。
 
 ## 执行方式

@@ -28,18 +28,18 @@ public static class StartupRegistration
                 var disabledState = (await StartupTask.GetAsync(TaskId)).State;
                 return disabledState is StartupTaskState.Disabled or StartupTaskState.DisabledByUser
                     ? (false, null)
-                    : (true, "Windows 未能关闭开机启动，请在任务管理器的「启动应用」中禁用通知弹幕。");
+                    : (true, "Windows 未能关闭开机启动，请在任务管理器的「启动应用」中禁用 NotifyBar。");
             }
             var enabledState = await task.RequestEnableAsync();
             return enabledState is StartupTaskState.Enabled or StartupTaskState.EnabledByPolicy
                 ? (true, null)
-                : (false, "Windows 未允许开机启动，请在任务管理器的「启动应用」中启用通知弹幕。");
+                : (false, "Windows 未允许开机启动，请在任务管理器的「启动应用」中启用 NotifyBar。");
         }
         catch
         {
             return (false, enabled
                 ? "开机启动需要先安装 MSIX，并允许此应用启动。"
-                : "无法关闭开机启动，请在任务管理器的「启动应用」中禁用通知弹幕。");
+                : "无法关闭开机启动，请在任务管理器的「启动应用」中禁用 NotifyBar。");
         }
 #else
         await Task.CompletedTask;

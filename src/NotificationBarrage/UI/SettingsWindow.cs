@@ -22,7 +22,7 @@ public sealed class SettingsWindow : Window
         Func<Task> connect, Action openAccess, Action openBanners)
     {
         _saveSettings = saveSettings;
-        Title = "通知弹幕 · 设置";
+        Title = "NotifyBar · 设置";
         Width = Math.Min(790, SystemParameters.WorkArea.Width - 30);
         Height = Math.Min(830, SystemParameters.WorkArea.Height - 30); MinWidth = 540; MinHeight = 460;
         WindowStartupLocation = WindowStartupLocation.CenterScreen;
@@ -30,7 +30,7 @@ public sealed class SettingsWindow : Window
         _qq.Foreground = _wechat.Foreground = _startup.Foreground = Foreground;
         FontFamily = new FontFamily("Microsoft YaHei UI"); FontSize = 14;
         var root = new StackPanel { Margin = new Thickness(30, 24, 30, 24) };
-        root.Children.Add(Text("通知弹幕", 29, "#F8FAFC", true));
+        root.Children.Add(Text("NotifyBar", 29, "#F8FAFC", true));
         root.Children.Add(Text("专心游戏，也不错过一句重要的话", 13, "#94A3B8"));
         var preview = new StackPanel();
         preview.Children.Add(Text("消息出现时", 11, "#94A3B8"));
