@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../src/NotificationBarrage/Domain/*.cs" Link="Domain/%(Filename)%(Extension)" />
+    <Compile Include="../../src/NotificationBarrage/Services/MessageFilter.cs" />
+    <Compile Include="../../src/NotificationBarrage/Services/BarrageQueue.cs" />
+    <Compile Include="../../src/NotificationBarrage/Services/SettingsStore.cs" />
+    <Compile Include="../../src/NotificationBarrage/Services/AppLogger.cs" />
+  </ItemGroup>
+</Project>

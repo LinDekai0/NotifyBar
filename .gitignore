@@ -1,0 +1,8 @@
+bin/
+obj/
+.tools/
+.superpowers/
+artifacts/
+*.pfx
+*.cer
+*.user
