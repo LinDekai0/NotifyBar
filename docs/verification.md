@@ -67,3 +67,11 @@ $sdk = 'D:\JetBrains Rider 2024.1.5\lib\ReSharperHost\windows-x64\dotnet\dotnet.
 & $sdk test NotificationBarrage.sln --no-build --no-restore -c Release
 .\scripts\Invoke-OfflineChecks.ps1 -DotnetPath $sdk
 ```
+
+## 2026-09-16 设置页滚动与视觉优化
+
+设置页原先在页面滚动容器内又嵌套通知来源滚动容器，鼠标滚轮在内层列表边界容易被 WPF 截留，导致页面上下滚动不稳定。现在通知来源列表并入唯一的页面滚动容器，使用连续像素滚动；搜索框、位置下拉框、按钮、卡片间距和固定底栏也统一了深色主题。
+
+- 离线检查增加唯一滚动容器回归断言，当前 `52` 项通过。
+- Release 编译：0 警告、0 错误；xUnit：27/27 通过。
+- MSIX `1.1.3.0` 签名并安装成功，包状态 `Ok`；安装版已启动并收到本机 Windows PowerShell 测试通知历史记录。

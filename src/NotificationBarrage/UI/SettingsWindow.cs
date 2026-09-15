@@ -9,7 +9,7 @@ namespace NotificationBarrage.UI;
 public sealed class SettingsWindow : Window
 {
     private readonly CheckBox _startup = new() { Content = "登录 Windows 后启动", Margin = new Thickness(0, 14, 0, 14) };
-    private readonly ComboBox _position = new() { ItemsSource = new[] { "顶部", "中部", "底部" }, Width = 160, HorizontalAlignment = HorizontalAlignment.Left, Foreground = Brushes.Black, Margin = new Thickness(0, 8, 0, 8) };
+    private readonly ComboBox _position = new() { ItemsSource = new[] { "顶部", "中部", "底部" }, Width = 160, HorizontalAlignment = HorizontalAlignment.Left, Background = Brush("#1E2B42"), BorderBrush = Brush("#40526E"), Foreground = Brush("#E2E8F0"), ItemContainerStyle = ComboItemStyle(), Padding = new Thickness(8, 5, 8, 5), Margin = new Thickness(0, 8, 0, 8) };
     private readonly TextBlock _status = Text("正在检查通知连接…", 14, "#A5B4C8");
     private readonly TextBlock _result = Text("设置保存在本机；聊天内容不写入日志。", 12, "#94A3B8");
     private readonly Slider _speed, _font, _opacity, _length, _offset;
@@ -18,7 +18,7 @@ public sealed class SettingsWindow : Window
     private readonly Func<Task<string?>> _refreshSources;
     private readonly AppSettings _settingsTemplate;
     private readonly SourceSelectionDraft _sourceDraft;
-    private readonly TextBox _sourceSearch = new() { Margin = new Thickness(0, 8, 0, 4), Padding = new Thickness(9, 7, 9, 7) };
+    private readonly TextBox _sourceSearch = new() { Margin = new Thickness(0, 8, 0, 4), Padding = new Thickness(9, 7, 9, 7), Background = Brush("#1E2B42"), BorderBrush = Brush("#40526E"), Foreground = Brush("#E2E8F0"), CaretBrush = Brush("#F8FAFC"), BorderThickness = new Thickness(1) };
     private readonly StackPanel _sourceRows = new();
 
     public SettingsWindow(AppSettings settings, Func<AppSettings, Task<string?>> saveSettings, Action test,
@@ -35,7 +35,11 @@ public sealed class SettingsWindow : Window
         Background = Brush("#0B1120"); Foreground = Brush("#E2E8F0");
         _startup.Foreground = Foreground;
         FontFamily = new FontFamily("Microsoft YaHei UI"); FontSize = 14;
-        var root = new StackPanel { Margin = new Thickness(30, 24, 30, 24) };
+        var root = new StackPanel
+        {
+            Margin = new Thickness(30, 24, 30, 24),
+            HorizontalAlignment = HorizontalAlignment.Stretch
+        };
         root.Children.Add(Text("NotifyBar", 29, "#F8FAFC", true));
         root.Children.Add(Text("专心游戏，也不错过一句重要的话", 13, "#94A3B8"));
         var preview = new StackPanel();
@@ -76,13 +80,8 @@ public sealed class SettingsWindow : Window
         };
         sourceActions.Children.Add(refresh);
         sourceOptions.Children.Add(sourceActions);
-        sourceOptions.Children.Add(new ScrollViewer
-        {
-            Content = _sourceRows,
-            MaxHeight = 250,
-            Margin = new Thickness(0, 8, 0, 0),
-            VerticalScrollBarVisibility = ScrollBarVisibility.Auto
-        });
+        _sourceRows.Margin = new Thickness(0, 8, 0, 0);
+        sourceOptions.Children.Add(_sourceRows);
         root.Children.Add(Card(sourceOptions));
         RebuildSourceRows();
 
@@ -100,11 +99,21 @@ public sealed class SettingsWindow : Window
         var footer = new WrapPanel();
         _save = Button("保存设置", "#0E7490"); _save.Click += async (_, _) => await SaveAsync(); footer.Children.Add(_save);
         var testButton = Button("发送测试弹幕"); testButton.Click += (_, _) => test(); footer.Children.Add(testButton);
-        var fixedFooter = new StackPanel { Margin = new Thickness(30, 8, 30, 16) };
-        fixedFooter.Children.Add(footer); _result.Margin = new Thickness(0, 10, 0, 0); fixedFooter.Children.Add(_result);
+        var footerContent = new StackPanel();
+        footerContent.Children.Add(footer); _result.Margin = new Thickness(0, 10, 0, 0); footerContent.Children.Add(_result);
+        var fixedFooter = new Border { Background = Background, Margin = new Thickness(30, 8, 30, 16), Padding = new Thickness(0, 4, 0, 0), Child = footerContent };
         var layout = new DockPanel { Background = Background };
         DockPanel.SetDock(fixedFooter, Dock.Bottom); layout.Children.Add(fixedFooter);
-        layout.Children.Add(new ScrollViewer { Content = root, Background = Background, VerticalScrollBarVisibility = ScrollBarVisibility.Auto });
+        layout.Children.Add(new ScrollViewer
+        {
+            Content = root,
+            Background = Background,
+            Focusable = true,
+            CanContentScroll = false,
+            PanningMode = PanningMode.VerticalOnly,
+            VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+            HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled
+        });
         Content = layout;
         _position.SelectedIndex = (int)settings.Position; _startup.IsChecked = settings.StartWithWindows;
     }
@@ -200,8 +209,16 @@ public sealed class SettingsWindow : Window
         target.Children.Add(slider); return slider;
     }
 
-    private static Border Card(UIElement content) => new() { Child = content, Background = Brush("#121D30"), BorderBrush = Brush("#24334B"), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(12), Padding = new Thickness(20, 15, 20, 15), Margin = new Thickness(0, 17, 0, 0) };
-    private static Button Button(string caption, string color = "#334155") => new() { Content = caption, Background = Brush(color), Foreground = Brushes.White, BorderThickness = new Thickness(0), Padding = new Thickness(16, 9, 16, 9), Margin = new Thickness(0, 8, 8, 0), Cursor = System.Windows.Input.Cursors.Hand };
+    private static Border Card(UIElement content) => new() { Child = content, Background = Brush("#121D30"), BorderBrush = Brush("#2A3B56"), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(14), Padding = new Thickness(22, 18, 22, 18), Margin = new Thickness(0, 14, 0, 0) };
+    private static Button Button(string caption, string color = "#334155") => new() { Content = caption, Background = Brush(color), Foreground = Brushes.White, BorderThickness = new Thickness(0), MinHeight = 36, Padding = new Thickness(16, 8, 16, 8), HorizontalContentAlignment = HorizontalAlignment.Center, VerticalContentAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 8, 8, 0), Cursor = System.Windows.Input.Cursors.Hand };
     private static TextBlock Text(string text, double size, string color, bool bold = false) => new() { Text = text, FontSize = size, Foreground = Brush(color), FontWeight = bold ? FontWeights.SemiBold : FontWeights.Normal, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 3, 0, 3) };
     private static SolidColorBrush Brush(string color) => new((Color)ColorConverter.ConvertFromString(color));
+    private static Style ComboItemStyle()
+    {
+        var style = new Style(typeof(ComboBoxItem));
+        style.Setters.Add(new Setter(Control.BackgroundProperty, Brush("#1E2B42")));
+        style.Setters.Add(new Setter(Control.ForegroundProperty, Brush("#E2E8F0")));
+        style.Setters.Add(new Setter(Control.PaddingProperty, new Thickness(8, 5, 8, 5)));
+        return style;
+    }
 }

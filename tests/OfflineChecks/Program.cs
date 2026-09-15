@@ -21,6 +21,11 @@ Check(listenerSource.Contains("_wake.WaitAsync(delay, token).ConfigureAwait(fals
 Check(listenerSource.Contains("_loop.ConfigureAwait(false)"), "停止监听等待不回流 UI 线程");
 Check(listenerSource.Contains("MapAccess(await _listener.RequestAccessAsync())"), "通知权限请求保留 UI 上下文");
 Check(listenerSource.Contains("_loop = Task.Run(() => RunAsync(_stop.Token), _stop.Token);"), "监听循环从线程池启动");
+var settingsWindowPath = Path.Combine(Directory.GetCurrentDirectory(), "src", "NotificationBarrage", "UI", "SettingsWindow.cs");
+Check(File.Exists(settingsWindowPath), "设置窗口源文件存在");
+var settingsWindowSource = File.ReadAllText(settingsWindowPath);
+Check(settingsWindowSource.Split("new ScrollViewer").Length - 1 == 1, "设置页只有一个滚动容器");
+Check(!settingsWindowSource.Contains("sourceOptions.Children.Add(new ScrollViewer"), "通知来源列表不嵌套滚动容器");
 IncomingNotification Incoming(string appId, string body, Guid? id = null, string? name = null) => new(id ?? Guid.NewGuid(), appId, name ?? appId, "好友", body, clock.GetUtcNow());
 settings = settings.MergeDiscoveredSources([new("wechat.app", "微信"), new("qq.app", "QQ")]).WithEnabledSourceIds(["wechat.app", "qq.app"]);
 BarrageMessage Message(string body, string appId = "qq.app") { filter.TryCreate(Incoming(appId, body), settings, out var m); return m!; }
