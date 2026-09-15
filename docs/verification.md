@@ -42,3 +42,28 @@
 Task 1 由实现子代理完成，独立审查提出两个阻断问题：旧迁移依赖显示名、公开权限检查不重置快照。均已修复并增加回归测试；权限检查还会使正在获取的旧快照失效。后续修复和安装脚本由主代理实施、检查，未将主代理复核描述成独立子代理复审。
 
 保留普通 WPF 覆盖层、主屏幕和无边框游戏的范围。原有 NotificationBarrage 程序集与配置身份不改，用户可见名称为 NotifyBar。证书仅受信任到 TrustedPeople，不导入 Root；提权仅用于导入该公钥，Add-AppxPackage 在原用户会话执行。
+
+## 2026-09-16 正式版周期性卡顿修复
+
+正式版才会触发的卡顿来自 Windows 通知监听路径：`StartAsync` 从 WPF UI 线程启动后台循环，`GetNotificationsAsync`、刷新闸门和唤醒等待完成后默认捕获 `DispatcherSynchronizationContext`。每次通知快照返回时，历史通知遍历、文本映射和快照更新因此回到 UI 线程，与覆盖层动画竞争合成；预览版没有真实监听，所以无法复现。中文文本不是主要原因。
+
+修复将后台监听、通知快照、刷新等待、唤醒等待和停止等待统一改为 `ConfigureAwait(false)`；`StartAsync` 还通过 `Task.Run` 启动监听循环，避免首个 WinRT await 同步完成时在 UI 线程执行快照解析。`RequestAccessAsync` 仍保留 UI 上下文，因为它由设置页按钮直接调用；通知事件和来源事件继续通过 `AppHost.Dispatcher.BeginInvoke` 回到 UI 线程。
+
+回归保护与结果：
+
+- 离线检查会读取正式监听源并验证上述关键 await 均使用 `ConfigureAwait(false)`；修改前该检查按预期失败，修复后通过。
+- `dotnet build NotificationBarrage.sln --no-restore -c Release`：0 警告、0 错误。
+- `dotnet test NotificationBarrage.sln --no-build --no-restore -c Release`：27/27 通过。
+- `scripts/Invoke-OfflineChecks.ps1`：49 项检查通过。
+
+复现/验证命令（PowerShell）：
+
+```powershell
+$env:DOTNET_CLI_HOME = 'D:\notification-barrage\.tools\cli'
+$env:DOTNET_CLI_TELEMETRY_OPTOUT = '1'
+$env:NUGET_PACKAGES = 'D:\notification-barrage\.tools\packages'
+$sdk = 'D:\JetBrains Rider 2024.1.5\lib\ReSharperHost\windows-x64\dotnet\dotnet.exe'
+& $sdk build NotificationBarrage.sln --no-restore -c Release
+& $sdk test NotificationBarrage.sln --no-build --no-restore -c Release
+.\scripts\Invoke-OfflineChecks.ps1 -DotnetPath $sdk
+```

@@ -6,6 +6,21 @@ var filter = new MessageFilter();
 var settings = new AppSettings();
 var checks = 0;
 void Check(bool ok, string name) { if (!ok) throw new Exception(name); checks++; Console.WriteLine($"PASS {name}"); }
+
+// The packaged build listens to WinRT notifications from a background loop.
+// Keep this source-level guard close to the offline checks so a future await
+// cannot silently resume on the WPF Dispatcher and reintroduce periodic
+// overlay stutter.  The preview build does not compile that listener, so a
+// behavioral-only smoke test would miss this regression.
+var listenerPath = Path.Combine(Directory.GetCurrentDirectory(), "src", "NotificationBarrage", "Services", "WindowsNotificationSource.cs");
+Check(File.Exists(listenerPath), "正式通知监听源文件存在");
+var listenerSource = File.ReadAllText(listenerPath);
+Check(listenerSource.Contains(".AsTask(token).ConfigureAwait(false)"), "WinRT 通知快照不回流 UI 线程");
+Check(listenerSource.Contains("_refreshGate.WaitAsync(token).ConfigureAwait(false)"), "刷新闸门等待不回流 UI 线程");
+Check(listenerSource.Contains("_wake.WaitAsync(delay, token).ConfigureAwait(false)"), "监听唤醒等待不回流 UI 线程");
+Check(listenerSource.Contains("_loop.ConfigureAwait(false)"), "停止监听等待不回流 UI 线程");
+Check(listenerSource.Contains("MapAccess(await _listener.RequestAccessAsync())"), "通知权限请求保留 UI 上下文");
+Check(listenerSource.Contains("_loop = Task.Run(() => RunAsync(_stop.Token), _stop.Token);"), "监听循环从线程池启动");
 IncomingNotification Incoming(string appId, string body, Guid? id = null, string? name = null) => new(id ?? Guid.NewGuid(), appId, name ?? appId, "好友", body, clock.GetUtcNow());
 settings = settings.MergeDiscoveredSources([new("wechat.app", "微信"), new("qq.app", "QQ")]).WithEnabledSourceIds(["wechat.app", "qq.app"]);
 BarrageMessage Message(string body, string appId = "qq.app") { filter.TryCreate(Incoming(appId, body), settings, out var m); return m!; }

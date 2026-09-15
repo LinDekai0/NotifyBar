@@ -71,7 +71,10 @@ public sealed class WindowsNotificationSource : INotificationSource
     {
         if (_loop is not null) return Task.CompletedTask;
         _stop = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        _loop = RunAsync(_stop.Token);
+        // Run the WinRT polling loop on the thread pool even when the first
+        // awaits complete synchronously. This prevents snapshot mapping from
+        // ever starting on the WPF Dispatcher thread.
+        _loop = Task.Run(() => RunAsync(_stop.Token), _stop.Token);
         return Task.CompletedTask;
     }
 
@@ -86,7 +89,7 @@ public sealed class WindowsNotificationSource : INotificationSource
                 var delay = 1000;
                 try
                 {
-                    if (await GetAccessStatusAsync() != NotificationAccessStatus.Allowed)
+                    if (await GetAccessStatusAsync().ConfigureAwait(false) != NotificationAccessStatus.Allowed)
                     {
                         _processor.Reset();
                         delay = 5000;
@@ -99,7 +102,7 @@ public sealed class WindowsNotificationSource : INotificationSource
                             try { _listener!.NotificationChanged += OnChanged; _subscribed = true; }
                             catch (Exception ex) { _logger.Error("notification-event-unavailable-polling", ex); }
                         }
-                        await RefreshCoreAsync(token);
+                        await RefreshCoreAsync(token).ConfigureAwait(false);
                         attempt = 0;
                     }
                 }
@@ -111,7 +114,7 @@ public sealed class WindowsNotificationSource : INotificationSource
                     _processor.Reset();
                     delay = retrySeconds[Math.Min(attempt++, retrySeconds.Length - 1)] * 1000;
                 }
-                await _wake.WaitAsync(delay, token);
+                await _wake.WaitAsync(delay, token).ConfigureAwait(false);
             }
         }
         catch (OperationCanceledException) when (token.IsCancellationRequested) { }
@@ -119,17 +122,17 @@ public sealed class WindowsNotificationSource : INotificationSource
 
     public async Task RefreshAsync(CancellationToken cancellationToken = default)
     {
-        if (await GetAccessStatusAsync() != NotificationAccessStatus.Allowed) return;
-        await RefreshCoreAsync(cancellationToken);
+        if (await GetAccessStatusAsync().ConfigureAwait(false) != NotificationAccessStatus.Allowed) return;
+        await RefreshCoreAsync(cancellationToken).ConfigureAwait(false);
     }
 
     private async Task RefreshCoreAsync(CancellationToken token)
     {
-        await _refreshGate.WaitAsync(token);
+        await _refreshGate.WaitAsync(token).ConfigureAwait(false);
         try
         {
             var accessRevision = _processor.AccessRevision;
-            var notifications = await _listener!.GetNotificationsAsync(NotificationKinds.Toast).AsTask(token);
+            var notifications = await _listener!.GetNotificationsAsync(NotificationKinds.Toast).AsTask(token).ConfigureAwait(false);
             token.ThrowIfCancellationRequested();
             // An access check may run while the WinRT snapshot is in flight.
             if (accessRevision != _processor.AccessRevision) return;
@@ -169,7 +172,7 @@ public sealed class WindowsNotificationSource : INotificationSource
             try { _listener!.NotificationChanged -= OnChanged; } catch (Exception ex) { _logger.Error("notification-unsubscribe", ex); }
             _subscribed = false;
         }
-        if (_loop is not null) await _loop;
+        if (_loop is not null) await _loop.ConfigureAwait(false);
         _loop = null;
         _processor.Reset();
         _eventAttempted = false;

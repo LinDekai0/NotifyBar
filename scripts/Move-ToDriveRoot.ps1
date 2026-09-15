@@ -3,11 +3,9 @@ param([switch]$RestoreDependencies)
 $ErrorActionPreference = 'Stop'
 $sourcePath = (Resolve-Path -LiteralPath (Split-Path $PSScriptRoot -Parent)).Path.TrimEnd('\')
 $destinationPath = [IO.Path]::GetFullPath('D:\notification-barrage').TrimEnd('\')
-$allowedSource = [IO.Path]::GetFullPath('D:\股价信息预测系统\notification-barrage').TrimEnd('\')
-if ($sourcePath -ne $allowedSource -and $sourcePath -ne $destinationPath) { throw '脚本只允许移动已确认的 notification-barrage 项目。' }
- $sourceHasSolution = Test-Path -LiteralPath (Join-Path $sourcePath 'NotificationBarrage.sln')
- $destinationHasSolution = Test-Path -LiteralPath (Join-Path $destinationPath 'NotificationBarrage.sln')
- $partialMove = !$sourceHasSolution -and $destinationHasSolution -and (Test-Path -LiteralPath (Join-Path $destinationPath '.git'))
+$sourceHasSolution = Test-Path -LiteralPath (Join-Path $sourcePath 'NotificationBarrage.sln')
+$destinationHasSolution = Test-Path -LiteralPath (Join-Path $destinationPath 'NotificationBarrage.sln')
+$partialMove = !$sourceHasSolution -and $destinationHasSolution -and (Test-Path -LiteralPath (Join-Path $destinationPath '.git'))
 if (!$sourceHasSolution -and !$partialMove) { throw '源目录不含预期解决方案，且未发现可续接的 D:\notification-barrage 半成品目标，已停止。' }
 if ($sourcePath -ne $destinationPath -and (Test-Path -LiteralPath $destinationPath) -and !$partialMove) { throw 'D:\notification-barrage 已存在，不会覆盖或合并。' }
 $links = @(Get-ChildItem -LiteralPath $sourcePath -Recurse -Force -Attributes ReparsePoint)

@@ -5,7 +5,7 @@
  xmlns:desktop="http://schemas.microsoft.com/appx/manifest/desktop/windows10"
  xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
  IgnorableNamespaces="uap uap3 desktop rescap">
-  <Identity Name="NotificationBarrage" Publisher="CN=NotificationBarrage.Dev" Version="1.1.1.0" ProcessorArchitecture="x64" />
+  <Identity Name="NotificationBarrage" Publisher="CN=NotificationBarrage.Dev" Version="1.1.2.0" ProcessorArchitecture="x64" />
   <Properties><DisplayName>NotifyBar</DisplayName><PublisherDisplayName>NotificationBarrage</PublisherDisplayName><Logo>Assets\StoreLogo.png</Logo></Properties>
   <Dependencies><TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.18362.0" MaxVersionTested="10.0.26100.0" /></Dependencies>
   <Resources><Resource Language="zh-cn" /></Resources>
